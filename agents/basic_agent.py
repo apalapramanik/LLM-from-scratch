@@ -1,5 +1,6 @@
 import json
 import math
+import requests
 from groq import Groq
 from dotenv import load_dotenv
 load_dotenv()
@@ -43,6 +44,24 @@ tools = [
                 "required": ["text"]
             }
         }
+    },
+
+    {
+        "type": "function",
+        "function": {
+            "name": "get_weather",
+            "description": "Gets the current weather for a given city. Use this when the user asks about weather anywhere.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "city": {
+                        "type": "string",
+                        "description": "The name of the city e.g. 'Tokyo' or 'New York'"
+                    }
+                },
+                "required": ["city"]
+            }
+        }
     }
 ]
 
@@ -57,6 +76,37 @@ def run_tool(name: str, inputs: dict) -> str:
     elif name == "word_count":
         count = len(inputs["text"].split())
         return str(count)
+    
+    elif name == "get_weather":
+        city = inputs["city"]
+        
+        # Step 1: convert city name to coordinates
+        geo_url = f"https://geocoding-api.open-meteo.com/v1/search?name={city}&count=1"
+        geo = requests.get(geo_url).json()
+        
+        if not geo.get("results"):
+            return f"Could not find city: {city}"
+        
+        lat = geo["results"][0]["latitude"]
+        lon = geo["results"][0]["longitude"]
+        country = geo["results"][0]["country"]
+        
+        # Step 2: fetch weather using coordinates
+        weather_url = (
+            f"https://api.open-meteo.com/v1/forecast"
+            f"?latitude={lat}&longitude={lon}"
+            f"&current=temperature_2m,wind_speed_10m,relative_humidity_2m"
+            f"&temperature_unit=celsius"
+        )
+        weather = requests.get(weather_url).json()
+        current = weather["current"]
+        
+        return (
+            f"Weather in {city}, {country}: "
+            f"{current['temperature_2m']}°C, "
+            f"wind {current['wind_speed_10m']} km/h, "
+            f"humidity {current['relative_humidity_2m']}%"
+        )
 
 # ── Agent loop ─────────────────────────────────────────────────────────────────
 def run_agent(user_message: str):
@@ -105,6 +155,7 @@ def run_agent(user_message: str):
 # ── Run it ─────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
 
+   
     run_agent("What is the square root of 144?")
-    run_agent("How many words are in 'The quick brown fox jumps over the lazy dog'?")
-    run_agent("Calculate the area of a circle with radius 7. The formula is pi * r^2.")
+    run_agent("What's the weather like in Tokyo right now?")
+    run_agent("Is it warmer in London or Paris today?")
