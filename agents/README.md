@@ -63,8 +63,6 @@ Groq/Llama models occasionally generate tool calls in an invalid format (e.g. `<
 ### 3. `^` vs `**` for exponentiation
 The model used `^` (XOR in Python) instead of `**` (exponentiation) when generating math expressions, causing a `TypeError`. Fixed by adding `.replace("^", "**")` in `run_tool` before passing the expression to `eval`.
 
-### 4. API key exposure
-A Groq API key was accidentally shared in plain text. The key was immediately revoked and regenerated. Fixed permanently by storing all secrets in a `.env` file, loading them with `python-dotenv`, and adding `.env` to `.gitignore` so keys are never committed to the repo.
 
 ---
 
