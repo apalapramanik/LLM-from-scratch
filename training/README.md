@@ -1,20 +1,6 @@
 # Training
 
-This folder contains fine-tuning scripts, SLURM job scripts, and training utilities. All training is run on an HPC cluster using GPU nodes.
-
----
-
-## What is Fine-Tuning?
-
-A pretrained model like Qwen or Llama has already learned general language understanding from massive datasets. Fine-tuning takes that pretrained model and continues training it on a smaller, domain-specific dataset to adapt its behavior — making it better at a specific task, style, or domain.
-
-There are several levels of fine-tuning:
-
-```
-Full fine-tuning  — update all parameters (expensive, rarely needed)
-LoRA              — add small trainable adapter layers, freeze the rest
-QLoRA             — LoRA + 4-bit quantization (fits large models on small GPUs)
-```
+This folder contains scripts for running and training language models on an HPC cluster using GPU nodes.
 
 ---
 
@@ -45,22 +31,22 @@ What it demonstrates:
 - `device_map="auto"` — automatically places model layers on GPU
 - `dtype=torch.float16` — half precision, halves VRAM usage
 - `apply_chat_template` — formats messages correctly for instruct models
-- `model.generate` — generates response tokens autoregressively
+- `model.generate` — generates response tokens one at a time
 - Decoding only the generated tokens, not the input prompt
 
 ### `slurm/`
 
-SLURM job scripts for submitting training jobs to the cluster scheduler.
+SLURM job scripts for submitting jobs to the cluster scheduler.
 
 | Script | Use for |
 |---|---|
 | `dev.sh` | Quick test runs, debugging |
-| `train.sh` | Standard fine-tuning runs |
+| `train.sh` | Standard training runs |
 | `big_train.sh` | Large model runs requiring more VRAM |
 
 ```bash
 # Submit a job
-sbatch training/slurm/train.sh training/finetune.py
+sbatch training/slurm/dev.sh training/inference.py
 
 # Check status
 squeue -u $USER
@@ -83,9 +69,5 @@ Key packages:
 ```
 torch          — PyTorch with CUDA support
 transformers   — model loading, tokenizers, generation
-peft           — LoRA and QLoRA adapters
-trl            — SFTTrainer, DPO trainer
-accelerate     — mixed precision and multi-GPU training
-bitsandbytes   — 4-bit quantization for QLoRA
 datasets       — dataset loading and preprocessing
 ```
