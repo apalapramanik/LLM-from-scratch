@@ -49,22 +49,18 @@ The agent runs a `while True` loop: it sends the conversation to the model, chec
 
 ## Problems Faced in Implementation
 
-### 1. Disk quota exceeded on HPC
-Setting up the conda environment on UNL's Swan cluster failed because the home directory (`/home/vuran/apramani`) filled up. The `.conda` and `.cache` folders (9.4GB and 11GB respectively) were sitting in home. Fixed by moving both to `$WORK` (`/work/vuran/apramani`) and symlinking them back to home so conda still finds them.
 
-### 2. `python` vs `python3` pointing to different interpreters
-On the Mac, `python3` pointed to the Homebrew system Python (`/opt/homebrew/bin/python3`) rather than the conda env. Packages installed with `pip` inside the conda env were invisible to `python3`. Fixed by always using `python` (not `python3`) inside the `llm-lab` env, and adding an alias in `.zshrc`.
 
-### 3. Groq tool-use model deprecations
+### 1. Groq tool-use model deprecations
 The model `llama3-groq-70b-8192-tool-use-preview` — which was specifically fine-tuned for tool calling — was decommissioned. Switched to `llama-3.3-70b-versatile` but it produced malformed tool call syntax. Eventually switched to `meta-llama/llama-4-scout-17b-16e-instruct` which handles tool calling reliably.
 
-### 4. Malformed tool call format
+### 2. Malformed tool call format
 Groq/Llama models occasionally generate tool calls in an invalid format (e.g. `<function=calculator {...}` instead of proper JSON). This caused `400 Bad Request` errors from the API. Fixed by switching models and adding a system prompt that explicitly instructs the model to always use tools rather than answering directly.
 
-### 5. `^` vs `**` for exponentiation
+### 3. `^` vs `**` for exponentiation
 The model used `^` (XOR in Python) instead of `**` (exponentiation) when generating math expressions, causing a `TypeError`. Fixed by adding `.replace("^", "**")` in the `run_tool` function before passing the expression to `eval`.
 
-### 6. API key exposure
+### 4. API key exposure
 A Groq API key was accidentally shared in plain text in chat. The key was immediately revoked and regenerated. Fixed permanently by storing all secrets in a `.env` file, loading them with `python-dotenv`, and adding `.env` to `.gitignore` so keys are never committed to the repo.
 
 ---
