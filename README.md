@@ -72,18 +72,47 @@ The size of a model is measured in parameters — the numbers learned during tra
 
 ---
 
-## Stack
+## Tech Stack
 
-| Purpose | Tool |
-|---|---|
-| Agent API | Groq (free tier) |
-| Agent framework | Raw API — no LangChain yet |
-| Model hub | HuggingFace |
-| Training | transformers + peft + trl |
-| Fine-tuning method | QLoRA (coming soon) |
-| HPC job scheduler | SLURM |
-| Environment | conda (llm-lab) |
-| Language | Python 3.11 |
+**Language & Environment**
+
+![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white)
+![Conda](https://img.shields.io/badge/conda-llm--lab-44A833?style=flat-square&logo=anaconda&logoColor=white)
+![JupyterLab](https://img.shields.io/badge/JupyterLab-4.x-F37626?style=flat-square&logo=jupyter&logoColor=white)
+
+**LLM APIs & SDKs**
+
+![Groq](https://img.shields.io/badge/Groq-API-F55036?style=flat-square&logoColor=white)
+![Anthropic](https://img.shields.io/badge/Anthropic-SDK-191919?style=flat-square&logo=anthropic&logoColor=white)
+![HuggingFace](https://img.shields.io/badge/HuggingFace-Hub-FFD21E?style=flat-square&logo=huggingface&logoColor=black)
+
+**Agent Frameworks**
+
+![LangChain](https://img.shields.io/badge/LangChain-1.2-1C3C3C?style=flat-square&logo=langchain&logoColor=white)
+![LangGraph](https://img.shields.io/badge/LangGraph-1.1-1C3C3C?style=flat-square&logo=langchain&logoColor=white)
+
+**Vector Store / RAG**
+
+![ChromaDB](https://img.shields.io/badge/ChromaDB-1.5-E85D04?style=flat-square&logo=databricks&logoColor=white)
+
+**Model Training & Fine-tuning**
+
+![PyTorch](https://img.shields.io/badge/PyTorch-2.5.1-EE4C2C?style=flat-square&logo=pytorch&logoColor=white)
+![CUDA](https://img.shields.io/badge/CUDA-12.1-76B900?style=flat-square&logo=nvidia&logoColor=white)
+![Transformers](https://img.shields.io/badge/🤗_Transformers-5.6-FFD21E?style=flat-square&logoColor=black)
+![PEFT](https://img.shields.io/badge/PEFT-LoRA%20%2F%20QLoRA-FFD21E?style=flat-square&logoColor=black)
+![TRL](https://img.shields.io/badge/TRL-SFT%20%2F%20RLHF-FFD21E?style=flat-square&logoColor=black)
+![Accelerate](https://img.shields.io/badge/Accelerate-HuggingFace-FFD21E?style=flat-square&logo=huggingface&logoColor=black)
+![BitsAndBytes](https://img.shields.io/badge/BitsAndBytes-4--bit%20Quant-6E40C9?style=flat-square&logoColor=white)
+
+**Apple Silicon**
+
+![MLX](https://img.shields.io/badge/Apple_MLX-0.31-000000?style=flat-square&logo=apple&logoColor=white)
+
+**Infrastructure**
+
+![SLURM](https://img.shields.io/badge/SLURM-HPC_Scheduler-0D6EFD?style=flat-square&logo=linux&logoColor=white)
+![dotenv](https://img.shields.io/badge/.env-Secrets-ECD53F?style=flat-square&logo=dotenv&logoColor=black)
 
 ---
 

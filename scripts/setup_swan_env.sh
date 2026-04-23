@@ -6,8 +6,8 @@ echo "🚀 Setting up llm-lab env on Swan..."
 module load anaconda
 
 # Create env (skip if exists)
-conda create -n llm-lab python=3.11 -y || echo "Env already exists, continuing..."
-conda activate llm-lab
+conda create -p /work/vuran/apramani/envs/llm-lab python=3.11 -y || echo "Env already exists, continuing..."
+conda activate /work/vuran/apramani/envs/llm-lab
 
 echo "📦 Installing PyTorch with CUDA 12.1..."
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
