@@ -4,6 +4,19 @@ A hands-on learning repo for building, fine-tuning, and deploying large language
 
 ---
 
+## Live Demo
+
+![Agent Demo](assets/demo.png)
+
+> **Run it locally:**
+> ```bash
+> conda activate llm-lab
+> streamlit run app.py
+> ```
+> Requires a `GROQ_API_KEY` in your `.env` file.
+
+---
+
 ## Goal
 
 The goal is to go from zero to being able to:
