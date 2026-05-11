@@ -34,6 +34,37 @@ The agent runs a `while True` loop: it sends the conversation to the model, chec
 
 A good example of the agent's reasoning ability — when asked "Is it warmer in London or Paris today?", the model calls `get_weather` twice on its own (once per city), compares the results, and answers in plain English. You never told it to call the tool twice — it figured that out from the question alone.
 
+### `rag_agent.py`
+
+A retrieval-augmented generation agent. Instead of calling tools, the agent looks up relevant chunks from a vector database and answers grounded in what it retrieved.
+
+The flow:
+
+```
+docs → chunks → embeddings → ChromaDB         (once, on first run)
+query → top-k chunks → LLM with context        (every query)
+```
+
+What each piece does:
+
+1. **Chunk** every markdown file in `data/docs/` into ~400-character pieces with 50-character overlap (so context isn't cut mid-thought)
+2. **Embed** each chunk with `all-MiniLM-L6-v2` — Chroma's default sentence-transformer model. Texts with similar meaning end up close in 384-dimensional vector space
+3. **Store** the vectors in a persistent ChromaDB collection on disk (`chroma_db/`)
+4. **Retrieve** the top-3 chunks closest to the query's embedding
+5. **Generate** the answer by passing the retrieved chunks as context with a system prompt that says "use ONLY the context, cite the source"
+
+The system prompt is what makes this *grounded*. Without it, the model would happily blend retrieved facts with its own training. With it, the model refuses out-of-scope questions ("What's the best pizza topping?" → "I don't have that information.") instead of hallucinating.
+
+Run it:
+
+```bash
+python agents/rag_agent.py
+```
+
+First run downloads the embedding model (~80MB) and embeds the docs. Subsequent runs reuse the persistent vector store and start instantly.
+
+**Why no LangChain?** LangChain abstracts all of this behind a `RetrievalQA` chain. Once you've written it from scratch you can see that RAG is just three small functions — chunk, retrieve, generate — and you'll know exactly what the framework is doing for you.
+
 ---
 
 ## How the Code Works
