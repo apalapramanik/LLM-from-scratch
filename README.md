@@ -6,14 +6,19 @@ A hands-on learning repo for building, fine-tuning, and deploying large language
 
 ## Live Demo
 
-![Agent Demo](assets/demo.png)
+Two agents in one Streamlit app — switch modes from the sidebar.
+
+| 🧰 Tool-Calling Agent | 📚 RAG Agent |
+|---|---|
+| ![Tool-calling mode](assets/demo_tool.png) | ![RAG mode](assets/demo.png) |
+| Picks the right tool (calculator, weather, word count) and chains them automatically | Retrieves relevant chunks from `data/docs/` and answers grounded in them — with citations |
 
 > **Run it locally:**
 > ```bash
 > conda activate llm-lab
-> streamlit run app.py
+> python -m streamlit run app.py
 > ```
-> Requires a `GROQ_API_KEY` in your `.env` file.
+> Requires a `GROQ_API_KEY` in your `.env` file. The RAG mode auto-ingests `data/docs/` on first run.
 
 ---
 
