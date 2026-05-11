@@ -8,10 +8,11 @@ A hands-on learning repo for building, fine-tuning, and deploying large language
 
 Two agents in one Streamlit app — switch modes from the sidebar.
 
-| 🧰 Tool-Calling Agent | 📚 RAG Agent |
+![Agent demo](assets/demo.gif)
+
+| 📚 RAG Agent | 🧰 Tool-Calling Agent |
 |---|---|
-| ![Tool-calling mode](assets/demo_tool.png) | ![RAG mode](assets/demo.png) |
-| Picks the right tool (calculator, weather, word count) and chains them automatically | Retrieves relevant chunks from `data/docs/` and answers grounded in them — with citations |
+| Retrieves relevant chunks from `data/docs/` and answers grounded in them, with citations | Picks the right tool (calculator, weather, word count) and chains them automatically |
 
 > **Run it locally:**
 > ```bash
