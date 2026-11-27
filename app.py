@@ -7,6 +7,8 @@ import chromadb
 from groq import Groq
 from dotenv import load_dotenv
 
+from agents.safe_calc import safe_calc
+from agents.tool_utils import validate_args
 from agents.rag_agent import (
     retrieve as rag_retrieve,
     answer as rag_answer,
@@ -17,6 +19,8 @@ from agents.rag_agent import (
 )
 
 load_dotenv()
+
+MAX_STEPS = 8   # hard limit on agent turns
 
 st.set_page_config(
     page_title="LLM Agent Demo",
@@ -119,14 +123,36 @@ TOOLS = [
 ]
 
 def run_tool(name: str, inputs: dict) -> str:
+    """Safety net: a tool must never crash the agent. Errors become text the model can read."""
+    problem = validate_args(TOOLS, name, inputs)
+    if problem:
+        return f"Error: {problem}"          # clear, fixable message for the model
+    try:
+        result = _run_tool(name, inputs)
+        return result if result is not None else f"Error: unknown tool '{name}'"
+    except Exception as e:
+        return f"Error running {name}: {type(e).__name__}: {e}"
+
+
+def parse_args(raw: str) -> dict:
+    """Model sometimes sends broken JSON. Return {} instead of crashing."""
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        return {}
+
+
+def _run_tool(name: str, inputs: dict) -> str:
     if name == "calculator":
-        expression = inputs["expression"].replace("^", "**")
-        return str(eval(expression, {"__builtins__": {}}, vars(math)))
+        try:
+            return str(safe_calc(inputs["expression"]))
+        except Exception as e:
+            return f"Calculator error: {e}"
     if name == "word_count":
         return str(len(inputs["text"].split()))
     if name == "get_weather":
         city = inputs["city"]
-        geo = requests.get(f"https://geocoding-api.open-meteo.com/v1/search?name={city}&count=1").json()
+        geo = requests.get(f"https://geocoding-api.open-meteo.com/v1/search?name={city}&count=1", timeout=5).json()
         if not geo.get("results"):
             return f"Could not find city: {city}"
         r = geo["results"][0]
@@ -134,7 +160,8 @@ def run_tool(name: str, inputs: dict) -> str:
             f"https://api.open-meteo.com/v1/forecast"
             f"?latitude={r['latitude']}&longitude={r['longitude']}"
             f"&current=temperature_2m,wind_speed_10m,relative_humidity_2m"
-            f"&temperature_unit=celsius"
+            f"&temperature_unit=celsius",
+            timeout=5,
         ).json()["current"]
         return (
             f"{city}, {r['country']}: {weather['temperature_2m']}°C, "
@@ -151,7 +178,8 @@ def run_tool_agent(user_message: str):
         {"role": "user", "content": user_message},
     ]
     tool_calls_made = []
-    while True:
+    seen = set()
+    for step in range(MAX_STEPS):            # hard limit
         response = client.chat.completions.create(
             model="meta-llama/llama-4-scout-17b-16e-instruct",
             max_tokens=1024,
@@ -160,15 +188,21 @@ def run_tool_agent(user_message: str):
             messages=messages,
         )
         msg = response.choices[0].message
-        if response.choices[0].finish_reason == "stop":
+        if not msg.tool_calls:               # done (or cut off) → stop
             return msg.content, tool_calls_made
+        messages.append(msg)  # assistant request goes in ONCE, before its tool results
         for tc in msg.tool_calls:
             name = tc.function.name
-            inputs = json.loads(tc.function.arguments)
-            result = run_tool(name, inputs)
+            inputs = parse_args(tc.function.arguments)
+            key = (name, json.dumps(inputs, sort_keys=True))
+            if key in seen:                  # early guard: exact repeat
+                result = "You already made this exact call. Use a different approach or answer now."
+            else:
+                seen.add(key)
+                result = run_tool(name, inputs)
             tool_calls_made.append({"tool": name, "inputs": inputs, "result": result})
-            messages.append(msg)
             messages.append({"role": "tool", "tool_call_id": tc.id, "content": result})
+    return f"⚠️ Stopped after {MAX_STEPS} steps without a final answer.", tool_calls_made
 
 # ── RAG agent setup ────────────────────────────────────────────────────────────
 @st.cache_resource

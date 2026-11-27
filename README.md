@@ -30,26 +30,60 @@ The goal is to go from zero to being able to:
 - Build tool-calling agents that interact with real APIs and data
 - Deploy models and agents in production
 
-Both tracks are developed in parallel — agents on a local machine, model training on an HPC cluster with GPU nodes.
+Everything runs on a Mac (Groq API for LLMs, Apple MLX for local models). The HPC/SLURM track was dropped.
+
+**Where to look:**
+- [`ROADMAP.md`](ROADMAP.md) — the 1-month plan, mapped to 25 AI-engineer interview problems
+- [`NOTES.md`](NOTES.md) — short revision notes per topic (slide-ready)
 
 ---
 
-## What We Have So Far
+## Progress
+
+A 1-month plan, built around 25 AI-engineer interview problems (P1–P25). Full plan in
+[`ROADMAP.md`](ROADMAP.md). Short revision notes for every topic in [`NOTES.md`](NOTES.md).
+
+| Week | Topic | Status |
+|---|---|---|
+| 1 | Agents: reliability, loops, tracing, memory (M1–M5) | ✅ done |
+| 2 | RAG: chunking, hybrid search, reranking, evals (M6–M11) | 🔨 next |
+| 3 | Reliability and safety: JSON, hallucination, evals, judges, injection, PII (M12–M17) | ⬜ |
+| 4 | Cost, speed, models, system design (M18–M24) | ⬜ |
+
+### Interview problems answered so far
+
+| # | Problem | How we answered it (in code) |
+|---|---|---|
+| P10 | Agent that uses tools reliably | Safe calculator (AST whitelist, no `eval`), timeouts, tool errors returned as text, argument validation against the tool schema, fixed duplicate-message bug (`agents/safe_calc.py`, `tool_utils.py`) |
+| P11 | Agent stuck in a loop | `MAX_STEPS` hard limit plus repeat-call detection; tested with a fake stuck model (`agents/basic_agent.py`) |
+| P12 | Memory for a long-running assistant | Short-term window + rolling summary + per-user long-term vector memory; only cut history at user messages (`agents/memory.py`) |
+| P23 | Trace every step of a workflow | Span-based tracer: inputs, outputs, latency, tokens, errors, saved as JSON (`agents/tracer.py`) |
+| P17 (partly) | Prompt injection | Why `eval` on model output is dangerous; whitelist approach |
+
+Still to come: P1–P5 (RAG), P6–P9 (cost, latency, cache, routing), P13–P16, P18 (JSON, hallucination, evals, judge, PII), P19–P22 (fine-tune, LoRA, serving, SSE), P24, P25.
+
+---
+
+## What's In The Code
 
 ### Agents — `agents/`
 
-A tool-calling agent built from scratch using the Groq API and Llama 4 Scout. No frameworks — just raw API calls so you understand exactly what's happening under the hood.
+Built from scratch with the Groq API and Llama 4 Scout. No frameworks.
 
-The agent can:
-- Do math using a calculator tool
-- Count words in text
-- Fetch live weather for any city in the world using the Open-Meteo API
+- `basic_agent.py` — tool-calling loop (calculator, word_count, weather) with step limit, repeat detection and tracing
+- `rag_agent.py` — chunk → embed → ChromaDB → retrieve → grounded answer with citations
+- `safe_calc.py` — whitelist-based math evaluator
+- `tool_utils.py` — validates model arguments against the tool schema
+- `tracer.py` — spans and traces for debugging
+- `memory.py` — conversation memory (window + summary) and long-term vector memory
 
-The key insight: the model never runs any of this code itself. It reads tool descriptions, decides which tool to call and with what inputs, and your Python code does the actual work. The model is the brain. Your code is the hands.
+The key idea: the model never runs code. It reads tool descriptions, decides what to call,
+and your Python does the work. The model is the brain. Your code is the hands.
 
 ### Training — `training/`
 
-Inference pipeline running on a GPU cluster. Loads `Qwen2.5-0.5B-Instruct` (a 494M parameter model by Alibaba) from HuggingFace and runs it on a GPU — proving the full stack works end to end before moving to fine-tuning.
+`inference.py` loads `Qwen2.5-0.5B-Instruct` from HuggingFace and generates text. Fine-tuning
+(LoRA with Apple MLX, on the Mac) is planned for Week 4. The earlier SLURM/HPC track was dropped.
 
 ---
 
@@ -57,15 +91,14 @@ Inference pipeline running on a GPU cluster. Loads `Qwen2.5-0.5B-Instruct` (a 49
 
 ```
 LLM-from-scratch/
-├── agents/          # Tool-calling agents
-├── training/        # Inference and fine-tuning scripts
-│   └── slurm/       # HPC job submission scripts
-├── data/            # Datasets and preprocessing
-├── notebooks/       # Exploration and experiments
-├── configs/         # Model and training configs
-├── scripts/         # Utility and setup scripts
-└── requirements.txt         # Mac/dev dependencies
-    requirements_hpc.txt     # HPC dependencies
+├── agents/          # agents, tools, tracer, memory
+├── training/        # inference (fine-tuning planned)
+├── data/docs/       # sample knowledge base for RAG
+├── traces/          # saved agent traces (git-ignored)
+├── app.py           # Streamlit demo (RAG + tool agent)
+├── ROADMAP.md       # the 1-month plan
+├── NOTES.md         # revision notes per topic (slide-ready)
+└── requirements.txt
 ```
 
 ---

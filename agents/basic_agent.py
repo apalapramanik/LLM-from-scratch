@@ -3,9 +3,14 @@ import math
 import requests
 from groq import Groq
 from dotenv import load_dotenv
+from safe_calc import safe_calc
+from tool_utils import validate_args
+from tracer import Trace   # run from agents/ folder: python basic_agent.py
 load_dotenv()
 
 client = Groq()
+
+MAX_STEPS = 8   # hard limit on agent turns
 
 # ── Tools ──────────────────────────────────────────────────────────────────────
 tools = [
@@ -67,11 +72,32 @@ tools = [
 
 # ── Tool execution ─────────────────────────────────────────────────────────────
 def run_tool(name: str, inputs: dict) -> str:
+    """Safety net: a tool must never crash the agent. Errors become text the model can read."""
+    problem = validate_args(tools, name, inputs)
+    if problem:
+        return f"Error: {problem}"          # clear, fixable message for the model
+    try:
+        result = _run_tool(name, inputs)
+        return result if result is not None else f"Error: unknown tool '{name}'"
+    except Exception as e:
+        return f"Error running {name}: {type(e).__name__}: {e}"
+
+
+def parse_args(raw: str) -> dict:
+    """Model sometimes sends broken JSON. Return {} instead of crashing."""
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        return {}
+
+
+def _run_tool(name: str, inputs: dict) -> str:
     if name == "calculator":
-        # Replace ^ with ** so the model can use either notation
-        expression = inputs["expression"].replace("^", "**")
-        result = eval(expression, {"__builtins__": {}}, vars(math))
-        return str(result)
+        # Whitelist-based calculator (no eval) — see safe_calc.py
+        try:
+            return str(safe_calc(inputs["expression"]))
+        except Exception as e:
+            return f"Calculator error: {e}"   # tell the model, don't crash
     
     elif name == "word_count":
         count = len(inputs["text"].split())
@@ -82,7 +108,7 @@ def run_tool(name: str, inputs: dict) -> str:
         
         # Step 1: convert city name to coordinates
         geo_url = f"https://geocoding-api.open-meteo.com/v1/search?name={city}&count=1"
-        geo = requests.get(geo_url).json()
+        geo = requests.get(geo_url, timeout=5).json()
         
         if not geo.get("results"):
             return f"Could not find city: {city}"
@@ -98,7 +124,7 @@ def run_tool(name: str, inputs: dict) -> str:
             f"&current=temperature_2m,wind_speed_10m,relative_humidity_2m"
             f"&temperature_unit=celsius"
         )
-        weather = requests.get(weather_url).json()
+        weather = requests.get(weather_url, timeout=5).json()
         current = weather["current"]
         
         return (
@@ -109,6 +135,14 @@ def run_tool(name: str, inputs: dict) -> str:
         )
 
 # ── Agent loop ─────────────────────────────────────────────────────────────────
+def finish(trace, answer):
+    """Close the trace, print the tree, save JSON, return the answer."""
+    trace.finish(answer)
+    print(f"\n📈 Trace {trace.id} ({trace.total_tokens()} tokens):\n{trace.pretty()}")
+    print(f"   saved → {trace.save()}")
+    return answer
+
+
 def run_agent(user_message: str):
     print(f"\n🧑 You: {user_message}")
     
@@ -120,38 +154,57 @@ def run_agent(user_message: str):
         {"role": "user", "content": user_message}
     ]
     
-    while True:
-        response = client.chat.completions.create(
-            # Change the model in your run_agent function
-            model="meta-llama/llama-4-scout-17b-16e-instruct",
-            max_tokens=1024,
-            tools=tools,
-            tool_choice="auto",
-            messages=messages
-        )
-        
+    seen = set()   # tool calls already made, for repeat detection
+    trace = Trace(user_message)
+
+    for step in range(MAX_STEPS):            # hard limit: replaces `while True`
+        with trace.span("model_call", input={"messages": len(messages)}) as span:
+            response = client.chat.completions.create(
+                model="meta-llama/llama-4-scout-17b-16e-instruct",
+                max_tokens=1024,
+                tools=tools,
+                tool_choice="auto",
+                messages=messages
+            )
+            usage = getattr(response, "usage", None)
+            if usage:
+                span.meta["total_tokens"] = usage.total_tokens
+
         message = response.choices[0].message
-        finish_reason = response.choices[0].finish_reason
-        
-        if finish_reason == "stop":
+
+        # No tool requested → the model is done (or was cut off). Either way, stop.
+        if not message.tool_calls:
             print(f"🤖 Agent: {message.content}")
-            return message.content
-        
-        if finish_reason == "tool_calls":
-            for tool_call in message.tool_calls:
-                name = tool_call.function.name
-                inputs = json.loads(tool_call.function.arguments)
-                
-                print(f"🔧 Tool: {name}({inputs})")
-                result = run_tool(name, inputs)
-                print(f"   → {result}")
-                
-                messages.append(message)
-                messages.append({
-                    "role": "tool",
-                    "tool_call_id": tool_call.id,
-                    "content": result
-                })
+            return finish(trace, message.content)
+
+        # Append the assistant's request ONCE, before its tool results.
+        messages.append(message)
+        for tool_call in message.tool_calls:
+            name = tool_call.function.name
+            inputs = parse_args(tool_call.function.arguments)
+
+            key = (name, json.dumps(inputs, sort_keys=True))
+            with trace.span(f"tool:{name}", input=inputs) as span:
+                if key in seen:              # early guard: exact repeat
+                    result = "You already made this exact call. Use a different approach or answer now."
+                    span.meta["repeat_blocked"] = True
+                else:
+                    seen.add(key)
+                    print(f"🔧 Tool: {name}({inputs})")
+                    result = run_tool(name, inputs)
+                span.output = result
+            print(f"   → {result}")
+
+            messages.append({
+                "role": "tool",
+                "tool_call_id": tool_call.id,
+                "content": result
+            })
+
+    msg = f"Stopped after {MAX_STEPS} steps without a final answer."
+    print(f"⚠️ {msg}")
+    return finish(trace, msg)
+
 # ── Run it ─────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
 

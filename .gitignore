@@ -208,3 +208,4 @@ __marimo__/
 
 # RAG vector store
 chroma_db/
+traces/
