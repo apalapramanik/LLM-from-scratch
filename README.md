@@ -45,10 +45,13 @@ A 1-month plan, built around 25 common AI-engineer interview problems. Full plan
 
 | Week | Topic | Status |
 |---|---|---|
-| 1 | Agents: reliability, loops, tracing, memory (M1–M5) | ✅ done |
-| 2 | RAG: chunking, hybrid search, reranking, evals (M6–M11) | 🔨 next |
-| 3 | Reliability and safety: JSON, hallucination, evals, judges, injection, PII (M12–M17) | ⬜ |
-| 4 | Cost, speed, models, system design (M18–M24) | ⬜ |
+| 1 | Agents: reliability, loops, tracing, memory | ✅ done |
+| 2 | RAG: chunking, hybrid search, reranking, evals | 🔨 next |
+| 3 | Fine-tuning: local inference with MLX, LoRA, base vs tuned | ⬜ |
+| 4 | Reliability and safety: JSON, hallucination, evals, judges, injection, PII, rollback | ⬜ |
+| 5 | Cost, speed, serving, system design | ⬜ |
+
+After that: optional extras (web search tool, LangGraph version, tiny GPT from scratch, deployment).
 
 ### Interview problems answered so far
 
@@ -89,7 +92,7 @@ and your Python does the work. The model is the brain. Your code is the hands.
 ### Training — `training/`
 
 `inference.py` loads `Qwen2.5-0.5B-Instruct` from HuggingFace and generates text. Fine-tuning
-(LoRA with Apple MLX, on the Mac) is planned for Week 4. The earlier SLURM/HPC track was dropped.
+(LoRA with Apple MLX, on the Mac) is planned for Week 3. The earlier SLURM/HPC track was dropped.
 
 ---
 
