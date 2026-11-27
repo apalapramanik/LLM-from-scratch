@@ -40,7 +40,7 @@ Everything runs on a Mac (Groq API for LLMs, Apple MLX for local models). The HP
 
 ## Progress
 
-A 1-month plan, built around 25 AI-engineer interview problems (P1–P25). Full plan in
+A 1-month plan, built around 25 common AI-engineer interview problems. Full plan in
 [`ROADMAP.md`](ROADMAP.md). Short revision notes for every topic in [`NOTES.md`](NOTES.md).
 
 | Week | Topic | Status |
@@ -52,15 +52,21 @@ A 1-month plan, built around 25 AI-engineer interview problems (P1–P25). Full 
 
 ### Interview problems answered so far
 
-| # | Problem | How we answered it (in code) |
-|---|---|---|
-| P10 | Agent that uses tools reliably | Safe calculator (AST whitelist, no `eval`), timeouts, tool errors returned as text, argument validation against the tool schema, fixed duplicate-message bug (`agents/safe_calc.py`, `tool_utils.py`) |
-| P11 | Agent stuck in a loop | `MAX_STEPS` hard limit plus repeat-call detection; tested with a fake stuck model (`agents/basic_agent.py`) |
-| P12 | Memory for a long-running assistant | Short-term window + rolling summary + per-user long-term vector memory; only cut history at user messages (`agents/memory.py`) |
-| P23 | Trace every step of a workflow | Span-based tracer: inputs, outputs, latency, tokens, errors, saved as JSON (`agents/tracer.py`) |
-| P17 (partly) | Prompt injection | Why `eval` on model output is dangerous; whitelist approach |
+Each topic is one of 25 common AI-engineer interview questions. Short answers below; the
+full list of 25 is in [`ROADMAP.md`](ROADMAP.md).
 
-Still to come: P1–P5 (RAG), P6–P9 (cost, latency, cache, routing), P13–P16, P18 (JSON, hallucination, evals, judge, PII), P19–P22 (fine-tune, LoRA, serving, SSE), P24, P25.
+| Problem | How we answered it (in code) |
+|---|---|
+| Build an agent that uses tools reliably | Safe calculator (AST whitelist, no `eval`), timeouts, tool errors returned as text, argument validation against the tool schema, fixed duplicate-message bug (`agents/safe_calc.py`, `tool_utils.py`) |
+| Your agent gets stuck in a loop. Fix it | Hard `MAX_STEPS` limit plus repeat-call detection; tested with a fake stuck model (`agents/basic_agent.py`) |
+| Design memory for a long-running assistant | Short-term window + rolling summary + per-user long-term vector memory; only cut history at user messages (`agents/memory.py`) |
+| Trace every step of a multi-agent workflow | Span-based tracer: inputs, outputs, latency, tokens, errors, saved as JSON (`agents/tracer.py`) |
+| Block prompt injection in a tool-using agent *(partly)* | Why `eval` on model output is dangerous; whitelist approach |
+
+**Still to come:** RAG at scale, debugging bad RAG answers, chunking, BM25 vs dense vs hybrid,
+rerankers, cutting LLM cost, first-token latency, semantic cache, model routing, valid JSON
+output, hallucinations, eval suites, LLM-as-judge, PII redaction, fine-tune vs RAG vs prompting,
+LoRA fine-tuning, serving at scale, SSE streaming, prompt rollback, and ChatGPT-style system design.
 
 ---
 
@@ -151,7 +157,7 @@ The size of a model is measured in parameters — the numbers learned during tra
 
 ![PyTorch](https://img.shields.io/badge/PyTorch-2.5.1-EE4C2C?style=flat-square&logo=pytorch&logoColor=white)
 ![CUDA](https://img.shields.io/badge/CUDA-12.1-76B900?style=flat-square&logo=nvidia&logoColor=white)
-![Transformers](https://img.shields.io/badge/🤗_Transformers-5.6-FFD21E?style=flat-square&logoColor=black)
+![Transformers](https://img.shields.io/badge/Transformers-5.6-FFD21E?style=flat-square&logo=huggingface&logoColor=black)
 ![PEFT](https://img.shields.io/badge/PEFT-LoRA%20%2F%20QLoRA-FFD21E?style=flat-square&logoColor=black)
 ![TRL](https://img.shields.io/badge/TRL-SFT%20%2F%20RLHF-FFD21E?style=flat-square&logoColor=black)
 ![Accelerate](https://img.shields.io/badge/Accelerate-HuggingFace-FFD21E?style=flat-square&logo=huggingface&logoColor=black)
@@ -164,7 +170,7 @@ The size of a model is measured in parameters — the numbers learned during tra
 **Infrastructure**
 
 ![SLURM](https://img.shields.io/badge/SLURM-HPC_Scheduler-0D6EFD?style=flat-square&logo=linux&logoColor=white)
-![dotenv](https://img.shields.io/badge/.env-Secrets-ECD53F?style=flat-square&logo=dotenv&logoColor=black)
+![dotenv](https://img.shields.io/badge/.env-Secrets-ECD53F?style=flat-square&logoColor=black)
 
 ---
 
